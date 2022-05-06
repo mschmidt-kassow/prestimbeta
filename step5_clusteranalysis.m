@@ -2,14 +2,9 @@
 % Meijer et al. (2016): Timing of beta oscillatory synchronization and temporal prediction of upcoming stimuli, NeuroImage
 % 1. Load TFR data and motor performance data
 % 2. Determine good subjects (With a minimum of 100 trials per condition)
-% 3. Check for remaining artifacts
-% 4. Take only pre-stimulus interval
-% 5. Padding of the data
-% 6. TFR computation as described in Meijer et al, 2016
-% 7. save TFR per condition
-% 8. cluster analysis for RP vs AP, SP vs AP and RS vs AS
-% 9. correlation analysis (motor performance vs beta power for condition RP)
-% 10. latency analysis: jackknife procedure following Miller, 1998
+% 3. cluster analysis for RP vs AP, SP vs AP and RS vs AS
+% 4. correlation analysis (motor performance vs beta power for condition RP)
+% 5. latency analysis: jackknife procedure following Miller, 1998
 
 %% Set analysis variables
 %necessary to run cluster analysis
@@ -108,7 +103,7 @@ end
 
 
 %% 3.) Berechne Neighbors aus electroden positionen
-load('\\192.168.32.1\fileshare\_projects\Beta_P3adap\Skripte0219\MarenElecPos.mat')
+load('\\192.168.32.1\fileshare\_projects\Beta_P3adap\Skripte2020\MarenElecPos.mat')
 marenelec.chanpos=marenelec.elecpos;
 ncfg=[];
 ncfg.method='triangulation';
@@ -176,6 +171,7 @@ sig_timeRIRR_range=[sig_timeRIRR(1) sig_timeRIRR(end)];
 sig_chanRIRR=statTallRIRR.label(find(any(any(statTallRIRR.posclusterslabelmat==1,3),2)));
 
 
+
 %% Rhythmic Sitting versus Arrhythmic Sitting (RS-AS)
 statTallSISR=ft_freqstatistics(cfg, GA_SI, GA_SR);
 sig_timeSISR=statTallSISR.time(find(any(any(statTallSISR.posclusterslabelmat==1,1),2)));
@@ -204,10 +200,10 @@ sig_chanRARR=statTallRARR.label(find(any(any(statTallRARR.posclusterslabelmat==1
 
 
 cfg=[];
-cfg.channel          = sig_chanRIRR;
+cfg.channel          = {'E17','E80','E100','E91','E119','E67','E71'}; %highest beta power RP-AP
 cfg.avgoverchan      = 'no';
-cfg.frequency        = [20 30];
-cfg.avgoverfreq      ='yes';
+cfg.frequency        = [12 30];
+cfg.avgoverfreq      ='no';
 cfg.latency          = sig_timeRIRR_range;
 cfg.avgovertime      = 'no';
 cfg.parameter        = 'powspctrm';
@@ -233,7 +229,7 @@ freq_stat.correlation = ft_freqstatistics(cfg,GA_RI);
 tmpstat = freq_stat.correlation;
 tmpstat_timeRIRR = tmpstat.time(find(any(any(tmpstat.negclusterslabelmat==1,1),2)));
 tmpstat_chanRIRR = tmpstat.label(find(any(any(tmpstat.negclusterslabelmat==1,3),2)));
-timenegclus=find(any(any(tmpstat.negclusterslabelmat==1,1),2));
+
 
 
 %% -------------------------------------------------------------------------------------
@@ -254,7 +250,7 @@ save('param_jackknife_fixfreq.mat','param_jackknife');
 
 
 %1.) Calculate grand average for each condition in significant time window
-load('param_jackknife_fixfreq.mat');
+%load('param_jackknife_fixfreq.mat');
 
 cfg=[];
 cfg.keepindividual='yes';
@@ -335,7 +331,7 @@ SchwelleRARR= A*xRARR; %SP vs AP
 
 latri=[];%RP vs AP
 for r = 1: length(sig_timeRIRR)
-    if nanmean(nanmean(nanmean(RIRRall(:,bestRIRR,freqALL,r),2),3),1)> SchwelleRIRR == 1
+    if nanmean(nanmean(nanmean(RIRRall(:,selecRIRR,freqALL,r),2),3),1)> SchwelleRIRR == 1
         l=1;
     else
         l=0;
@@ -347,7 +343,7 @@ min_Riall=GA_R.time(find(latri,1));
 
 latsi=[]; %RS vs AS
 for r = 1:length(sig_timeSISR)
-    if nanmean(nanmean(nanmean(SISRall(:,bestSISR,freqALL,r),2),3),1)> SchwelleSISR == 1
+    if nanmean(nanmean(nanmean(SISRall(:,selecSISR,freqALL,r),2),3),1)> SchwelleSISR == 1
         l=1;
     else
         l=0;
@@ -359,7 +355,7 @@ min_Siall=GA_S.time(find(latsi,1));
 
 latra=[]; %SP vs AP
 for r = 1: length(sig_timeRARR)
-    if nanmean(nanmean(nanmean(RARRall(:,bestRARR,freqALL,r),2),3),1)> SchwelleRARR == 1
+    if nanmean(nanmean(nanmean(RARRall(:,selecRARR,freqALL,r),2),3),1)> SchwelleRARR == 1
         l=1;
     else
         l=0;
