@@ -11,7 +11,7 @@
 load '\\192.168.32.1\fileshare\_projects\P3adaptiv\EEGcap_lay\lay_test.mat';
 
 %subjects
-sub={'03','05','07','08','09','11','12','13','14','15','19','20','21','22','23','25','26','27','28','29','30','34','35','36','37','38','39','43','44'};
+sub={'03','07','08','09','11','12','13','14','15','19','20','21','22','23','25','26','27','28','29','30','34','35','36','37','38','39','43','44'};
 
 %data
 postfix='_meijer_2020_500';
@@ -170,14 +170,24 @@ sig_timeRIRR=statTallRIRR.time(find(any(any(statTallRIRR.posclusterslabelmat==1,
 sig_timeRIRR_range=[sig_timeRIRR(1) sig_timeRIRR(end)];
 sig_chanRIRR=statTallRIRR.label(find(any(any(statTallRIRR.posclusterslabelmat==1,3),2)));
 
-
-
 %% Rhythmic Sitting versus Arrhythmic Sitting (RS-AS)
 statTallSISR=ft_freqstatistics(cfg, GA_SI, GA_SR);
 sig_timeSISR=statTallSISR.time(find(any(any(statTallSISR.posclusterslabelmat==1,1),2)));
 sig_timeSISR_range=[sig_timeSISR(1) sig_timeSISR(end)];
 sig_chanSISR=statTallSISR.label(find(any(any(statTallSISR.posclusterslabelmat==1,3),2)));
 
+%% Rhythmic Pedaling versus Rhythmic Sitting (RP-RS)
+cfg.latency=sig_timeRIRR_range;
+statTallRISI=ft_freqstatistics(cfg, GA_RI, GA_SI);%
+sig_timeRISI=statTallRISI.time(find(any(any(statTallRISI.posclusterslabelmat==1,1),2)));
+sig_timeRISI_range=[sig_timeRISI(1) sig_timeRISI(end)];
+sig_chanRISI=statTallRISI.label(find(any(any(statTallRISI.posclusterslabelmat==1,3),2)));
+
+%% Arrhythmic Pedaling versus Arrhythmic Sitting (AP-AS) n.s.
+statTallRRSR=ft_freqstatistics(cfg, GA_RR, GA_SR);%
+sig_timeRRSR=statTallRRSR.time(find(any(any(statTallRRSR.posclusterslabelmat==1,1),2)));
+sig_timeRRSR_range=[sig_timeRRRSR(1) sig_timeRRSR(end)];
+sig_chanRRSR=statTallRRSR.label(find(any(any(statTallRRSR.posclusterslabelmat==1,3),2)));
 
 %% Self-initiated Pedaling vs Arrhythmic Pedaling (SP vs AP)
 cfg.latency=sig_timeRIRR_range;
@@ -186,11 +196,17 @@ sig_timeRARR=statTallRARR.time(find(any(any(statTallRARR.posclusterslabelmat==1,
 sig_timeRARR_range=[sig_timeRARR(1) sig_timeRARR(end)];
 sig_chanRARR=statTallRARR.label(find(any(any(statTallRARR.posclusterslabelmat==1,3),2)));
 
+%% Self-initiated Pedaling vs Rhythmic Pedaling (SP vs RP)
+statTallRARI=ft_freqstatistics(cfg, GA_RA, GA_RI);
+sig_timeRARI=statTallRARI.time(find(any(any(statTallRARI.posclusterslabelmat==1,1),2)));
+sig_timeRARI_range=[sig_timeRARI(1) sig_timeRARI(end)];
+sig_chanRARI=statTallRARI.label(find(any(any(statTallRARI.posclusterslabelmat==1,3),2)));
 
 
-
-
-
+%% Self-initiated Pedaling versus  Rhythmic Sitting (SP-RS) n.s.
+cfg.latency=sig_timeRARR_range;
+cfg.channel=sig_chanRARR;
+statTallRASI=ft_freqstatistics(cfg, GA_RA, GA_SI);
 
 
 
@@ -232,242 +248,4 @@ tmpstat_chanRIRR = tmpstat.label(find(any(any(tmpstat.negclusterslabelmat==1,3),
 
 
 
-%% -------------------------------------------------------------------------------------
-% ------------ Latency analysis: beta power peak; according to  Miller 1998 ------------
-% --------------------------------------------------------------------------------------
 
-%save relevant variables for jackknife procedure (latency analysis)
-param_jackknife={};
-param_jackknife.label={'RIRR';'SISR';'RARR'};
-param_jackknife.time=[sig_timeRIRR_range;sig_timeSISR_range;sig_timeRARR_range];
-param_jackknife.sigtimeRIRR=sig_timeRIRR;
-param_jackknife.sigtimeSISR=sig_timeSISR;
-param_jackknife.sigtimeRARR=sig_timeRARR;
-param_jackknife.channelRIRR=[sig_chanRIRR];
-param_jackknife.channelSISR=[sig_chanSISR];
-param_jackknife.channelRARR=[sig_chanRARR];
-save('param_jackknife_fixfreq.mat','param_jackknife');
-
-
-%1.) Calculate grand average for each condition in significant time window
-%load('param_jackknife_fixfreq.mat');
-
-cfg=[];
-cfg.keepindividual='yes';
-cfg.parameter={'powspctrm'};
-cfg.toilim         = [param_jackknife.sigtimeSISR(1) param_jackknife.sigtimeSISR(end)];
-GA_S=ft_freqgrandaverage(cfg,TFRall_S{goodsubj});
-GA_SI=ft_freqgrandaverage(cfg,TFRall_SI{goodsubj});
-
-cfg.toilim         = [param_jackknife.sigtimeRIRR(1) param_jackknife.sigtimeRIRR(end)];
-GA_R=ft_freqgrandaverage(cfg,TFRall_R{goodsubj});
-GA_RI=ft_freqgrandaverage(cfg,TFRall_RI{goodsubj});
-
-cfg.toilim         = [param_jackknife.sigtimeRARR(1) param_jackknife.sigtimeRARR(end)] ;
-GA_RR=ft_freqgrandaverage(cfg,TFRall_RR{goodsubj});
-GA_RA=ft_freqgrandaverage(cfg,TFRall_RA{goodsubj});
-GA_RaR=GA_RA;
-GA_RaR.powspctrm=GA_RA.powspctrm-GA_RR.powspctrm;
-
-%2.) Determine relevant electrodes, frequency and time per condition
-%%% set PARAMETERs%%%%%
-A=0.5; %Threshold
-
-SISRall=eval(['GA_S.powspctrm']);
-RIRRall=eval(['GA_R.powspctrm']);
-RARRall=eval(['GA_RaR.powspctrm']);
-
-nos=size(GA_S.powspctrm,1);
-
-freqALL=find(GA_S.freq>=12 & GA_S.freq<30); %freqrange (same for all conditions)
-
-%cluster channels for each condition
-channelSISR=param_jackknife.channelSISR;
-channelRIRR=param_jackknife.channelRIRR;
-channelRARR=param_jackknife.channelRARR;
-
-selecSISR=[]; %RS vs AS
-for i=1:length(channelSISR)
-    disp('****************');
-    disp(channelSISR{i});
-    disp('****************');
-    a=find(strcmp(GA_SI.label,channelSISR{i}));
-    selecSISR=[selecSISR, a];
-end
-selecRIRR=[]; %RP vs SP
-for i=1:length(channelRIRR)
-    disp('****************');
-    disp(channelRIRR{i});
-    disp('****************');
-    a=find(strcmp(GA_SI.label,channelRIRR{i}));
-    selecRIRR=[selecRIRR, a];
-end
-selecRARR=[]; %SP vs AP
-for i=1:length(channelRARR)
-    disp('****************');
-    disp(channelRARR{i});
-    disp('****************');
-    a=find(strcmp(GA_SI.label,channelRARR{i}));
-    selecRARR=[selecRARR, a];
-end
-
-
-%3.) Calculate time point of maximum power for cluster electrodes
-%RS vs AS
-[xSISR,y]=max(squeeze(nanmean(nanmean(nanmean(SISRall(:,selecSISR,freqALL,:),1),2),3)));
-latSISR= GA_S.time(y)
-%RP vs AP
-[xRIRR,y]=max(squeeze(nanmean(nanmean(nanmean(RIRRall(:,selecRIRR,freqALL,:),1),2),3))); % die ist so spät
-latRIRR= GA_R.time(y)
-
-%SP vs AP
-[xRARR,y]=max(squeeze(nanmean(nanmean(nanmean(RARRall(:,selecRARR,freqALL,:),1),2),3)));
-latRARR= GA_RaR.time(y)
-
-% 4.) Calculate Power Threshold
-SchwelleRIRR= A*xRIRR; %RP vs AP
-SchwelleSISR= A*xSISR;%RS vs AS
-SchwelleRARR= A*xRARR; %SP vs AP
-
-latri=[];%RP vs AP
-for r = 1: length(sig_timeRIRR)
-    if nanmean(nanmean(nanmean(RIRRall(:,selecRIRR,freqALL,r),2),3),1)> SchwelleRIRR == 1
-        l=1;
-    else
-        l=0;
-    end
-    
-    latri= [latri l];
-end
-min_Riall=GA_R.time(find(latri,1));
-
-latsi=[]; %RS vs AS
-for r = 1:length(sig_timeSISR)
-    if nanmean(nanmean(nanmean(SISRall(:,selecSISR,freqALL,r),2),3),1)> SchwelleSISR == 1
-        l=1;
-    else
-        l=0;
-    end
-    
-    latsi= [latsi l];
-end
-min_Siall=GA_S.time(find(latsi,1));
-
-latra=[]; %SP vs AP
-for r = 1: length(sig_timeRARR)
-    if nanmean(nanmean(nanmean(RARRall(:,selecRARR,freqALL,r),2),3),1)> SchwelleRARR == 1
-        l=1;
-    else
-        l=0;
-    end
-    
-    latra= [latra l];
-end
-min_Raall=GA_RaR.time(find(latra,1));
-
-
-%6.) Actual Jackknife Proc: Average N-1
-PowerSISR=[];
-PowerRIRR=[];
-PowerRARR=[];
-Mins=[];
-
-%Determin earliest timepoint where beta power is higher than threshold
-for i=1:26;
-    RIRRj=RIRRall;
-    RARRj=RARRall;
-    SISRj=SISRall;
-     
-    SISRj(i,:,:,:)=[];
-    [x,y]=max(squeeze(nanmean(nanmean(nanmean(SISRj(:,selecSISR,freqALL,:),1),2),3)));
-    y= GA_S.time(y);
-    PowerSISR=[PowerSISR; x y];
-    SchwelleSISR= A*x;
-    
-    RIRRj(i,:,:,:)=[];
-    [x,y]=max(squeeze(nanmean(nanmean(nanmean(RIRRj(:,selecRIRR,freqALL,:),1),2),3)));
-    y= GA_R.time(y);
-    PowerRIRR=[PowerRIRR; x y];
-    SchwelleRIRR= A*x; 
-    
-    RARRj(i,:,:,:)=[];
-    [x,y]=max(squeeze(nanmean(nanmean(nanmean(RARRj(:,selecRARR,freqALL,:),1),2),3)));
-    y= GA_RaR.time(y);
-    PowerRARR=[PowerRARR; x y];
-    SchwelleRARR= A*x; 
-    
-    ri=[];
-    for r = 1:length(sig_timeRIRR)
-        if nanmean(nanmean(nanmean(RIRRj(:,selecRIRR,freqALL,r),2),3),1)>= SchwelleRIRR == 1
-            l=1;
-        else
-            l=0;
-        end
-        
-        ri= [ri l];
-    end
-    min_Ri=GA_R.time(find(ri,1));
-    
-    ra=[];
-    for r = 1:length(sig_timeRARR)
-        if nanmean(nanmean(nanmean(RARRj(:,selecRARR,freqALL,r),2),3),1)>= SchwelleRARR == 1
-            l=1;
-        else
-            l=0;
-        end
-        
-        ra= [ra l];
-    end
-    min_Ra=GA_RaR.time(find(ra,1));
-    
-    si=[];
-    for r = 1:length(sig_timeSISR)
-        if nanmean(nanmean(nanmean(SISRj(:,selecSISR,freqALL,r),2),3),1)>= SchwelleSISR == 1
-            l=1;
-        else
-            l=0;
-        end
-        
-        si= [si l];
-    end
-    min_Si=GA_S.time(find(si,1));
-    
-    D_R=min_Ri-min_Si;
-    D_Ra=min_Ra-min_Si;
-    Mins = [Mins; min_Ri min_Si D_R min_Ra D_Ra];
-end
-
-%%7. statistics
-
-nos=26;
-% see Miller 1998: calculate standard error and then t-values from standard error
-D_all=min_Riall-min_Siall; %Difference between 
-DRa_all=min_Raall-min_Siall; %Difference between SP-AP and RS-AS
-
-J=(sum(Mins(:,3)))/(nos); %RP-AP and RS-AS
-JRa=(sum(Mins(:,5)))/(nos);%SP-AP and RS-AS
-
-sumpow=sum(power((Mins(:,3)-J),2)); %RP-AP and RS-AS
-sumpowRa=sum(power((Mins(:,5)-JRa),2));%SP-AP and RS-AS
-
-Standarderror=sqrt(sumpow*(25/26)); %RP-AP and RS-AS
-StandarderrorRa=sqrt(((sumpowRa*25)/26)); %SP-AP and RS-AS
-
-
-Var=sumpow*((nos-1)/nos); %RP-AP and RS-AS
-VarRa=sumpowRa*((nos-1)/nos); %SP-AP and RS-AS
-
-Standardabweichung=sqrt(Var); %RP-AP and RS-AS
-StandardabweichungRa=sqrt(VarRa); %SP-AP and RS-AS
-
-% t-values
-t_RiS=D_all/Standarderror %RP-AP and RS-AS
-t_RaS=DRa_all/StandarderrorRa %SP-AP and RS-AS
-
-alphalow = (0.05/3)/2;
-alphaup = 1-(0.05/3)/2;
-
-upp = tinv(alphaup,(nos-1));
-low = tinv(alphalow,(nos-1));
-CI_RiS=D_all+upp*Standarderror; % Confidence interval  RP-AP and RS-AS
-CI_RaS=DRa_all+upp*StandarderrorRa; % confidence interval SP-AP and RS-AS
